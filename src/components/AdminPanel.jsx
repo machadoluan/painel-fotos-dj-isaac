@@ -4,6 +4,7 @@ import imageCompression from 'browser-image-compression'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import Layout from './admin/Layout'
+import QRCodeModal from './QRCodeModal'
 
 function generateUUID() {
   if (typeof crypto.randomUUID === 'function') return crypto.randomUUID()
@@ -78,6 +79,8 @@ function EventCard({ event, onToggleActive, onSetFeatured, onUnfeatured, onDelet
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [updatingLogo, setUpdatingLogo] = useState(false)
+  const [qrOpen, setQrOpen] = useState(false)
+  const uploadUrl = `${window.location.origin}/evento/${event.slug}`
 
   const handleLogoFileChange = async (e) => {
     const file = e.target.files?.[0]
@@ -240,29 +243,17 @@ function EventCard({ event, onToggleActive, onSetFeatured, onUnfeatured, onDelet
             Gerenciar fotos
           </button>
 
-          {/* QR + Telão */}
+          {/* QR do evento + Telão */}
           <div className="grid grid-cols-2 gap-2">
-            {event.featured ? (
-              <button
-                onClick={() => onUnfeatured(event)}
-                className="flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-xs font-semibold transition-colors"
-              >
-                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
-                Desvincular QR
-              </button>
-            ) : (
-              <button
-                onClick={() => onSetFeatured(event)}
-                className="flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-xs font-semibold transition-colors"
-              >
-                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
-                Vincular QR
-              </button>
-            )}
+            <button
+              onClick={() => setQrOpen(true)}
+              className="flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-xs font-semibold transition-colors"
+            >
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+              </svg>
+              QR do evento
+            </button>
             <a
               href={carouselUrl}
               target="_blank"
@@ -276,6 +267,29 @@ function EventCard({ event, onToggleActive, onSetFeatured, onUnfeatured, onDelet
             </a>
           </div>
 
+          {/* Vincular QR fixo */}
+          {event.featured ? (
+            <button
+              onClick={() => onUnfeatured(event)}
+              className="w-full flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-xs font-semibold transition-colors"
+            >
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              Desvincular do QR fixo
+            </button>
+          ) : (
+            <button
+              onClick={() => onSetFeatured(event)}
+              className="w-full flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-xs font-semibold transition-colors"
+            >
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              Vincular ao QR fixo
+            </button>
+          )}
+
           {/* Copiar link */}
           <button
             onClick={handleCopyLink}
@@ -288,6 +302,14 @@ function EventCard({ event, onToggleActive, onSetFeatured, onUnfeatured, onDelet
           </button>
         </div>
       </div>
+
+      {qrOpen && (
+        <QRCodeModal
+          url={uploadUrl}
+          eventName={event.name}
+          onClose={() => setQrOpen(false)}
+        />
+      )}
 
       {confirmDelete && (
         <DeleteConfirmModal

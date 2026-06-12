@@ -1,7 +1,16 @@
+import { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 
 export default function QRCodeModal({ url, eventName, onClose, extra = null }) {
+  const [copied, setCopied] = useState(false)
+
   const handlePrint = () => window.print()
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4" onClick={onClose}>
@@ -19,7 +28,27 @@ export default function QRCodeModal({ url, eventName, onClose, extra = null }) {
         </div>
 
         {extra}
-        <p className="text-xs text-gray-400 mb-6 break-all">{url}</p>
+
+        <button
+          onClick={handleCopy}
+          className="w-full flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 text-xs py-2.5 rounded-xl font-medium transition-colors mb-4"
+        >
+          {copied ? (
+            <>
+              <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-emerald-600">Link copiado!</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <span className="break-all">{url}</span>
+            </>
+          )}
+        </button>
 
         <div className="flex gap-3">
           <button

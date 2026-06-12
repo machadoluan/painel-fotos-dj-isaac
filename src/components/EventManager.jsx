@@ -1,7 +1,42 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import JSZip from 'jszip'
 import { supabase } from '../lib/supabaseClient'
 import Layout from './admin/Layout'
+
+async function downloadSingle(photo) {
+  const res = await fetch(photo.url)
+  const blob = await res.blob()
+  const ext = photo.url.split('.').pop().split('?')[0] || 'jpg'
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `foto-${photo.id.slice(0, 8)}.${ext}`
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
+async function downloadAll(photos, eventName, setDownloadingAll) {
+  setDownloadingAll(true)
+  try {
+    const zip = new JSZip()
+    await Promise.all(
+      photos.map(async (photo, i) => {
+        const res = await fetch(photo.url)
+        const blob = await res.blob()
+        const ext = photo.url.split('.').pop().split('?')[0] || 'jpg'
+        zip.file(`foto-${String(i + 1).padStart(3, '0')}.${ext}`, blob)
+      })
+    )
+    const content = await zip.generateAsync({ type: 'blob' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(content)
+    a.download = `${eventName.replace(/\s+/g, '-').toLowerCase()}-fotos.zip`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  } finally {
+    setDownloadingAll(false)
+  }
+}
 
 function PhotoModal({ photo, onHide, onShow, onDelete, onClose }) {
   return (
@@ -54,6 +89,16 @@ function PhotoModal({ photo, onHide, onShow, onDelete, onClose }) {
           )}
 
           <button
+            onClick={() => downloadSingle(photo)}
+            className="w-full flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 py-2.5 rounded-xl font-semibold text-sm transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Baixar foto
+          </button>
+
+          <button
             onClick={onDelete}
             className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-2.5 rounded-xl font-semibold text-sm transition-colors"
           >
@@ -80,6 +125,7 @@ export default function EventManager() {
   const [selected, setSelected] = useState(null)
   const [filter, setFilter] = useState('all')
   const [liveStatus, setLiveStatus] = useState('connecting')
+  const [downloadingAll, setDownloadingAll] = useState(false)
 
   // ── Carga inicial ──────────────────────────────────────
   useEffect(() => {
@@ -225,6 +271,7 @@ export default function EventManager() {
             </svg>
           </button>
           <div className="min-w-0 flex-1">
+
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
                 {loading ? '...' : event?.name}
@@ -252,6 +299,32 @@ export default function EventManager() {
               {photos.length} foto(s) — {visibleCount} visível(eis), {hiddenCount} oculta(s)
             </p>
           </div>
+
+          {photos.length > 0 && (
+            <button
+              onClick={() => downloadAll(photos, event?.name || 'evento', setDownloadingAll)}
+              disabled={downloadingAll}
+              className="shrink-0 inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed text-white px-3 sm:px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm"
+            >
+              {downloadingAll ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  <span className="hidden sm:inline">Comprimindo...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span className="hidden sm:inline">Baixar tudo</span>
+                  <span className="sm:hidden">ZIP</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Filter tabs */}
